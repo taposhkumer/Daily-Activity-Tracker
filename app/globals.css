@@ -1,26 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* This changes the main background color */
+  --background-start-rgb: 88, 28, 135; /* Deep Purple */
+  --background-end-rgb: 58, 12, 92;    /* Darker Purple gradient */
+  --foreground-rgb: 255, 255, 255;     /* White text so it's readable */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background-start-rgb: 30, 9, 47;  /* Very dark purple for dark mode */
+    --background-end-rgb: 15, 4, 25;
+    --foreground-rgb: 255, 255, 255;
   }
 }
+.poppins{
+  font-family:var(--font-poppins);
+}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities{
+  .text-balance{
+    text-wrap:balance;
+  }
 }
