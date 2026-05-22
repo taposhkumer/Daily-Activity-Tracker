@@ -1,11 +1,14 @@
-import React from 'react';
+"use client";
+
+import { useUser, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 
 export default function Navbar() {
+  const { isSignedIn, isLoaded } = useUser();
+
   return (
     <nav className="w-full bg-white px-6 py-4 flex items-center justify-between border-b border-gray-100">
-      {/* Left Side: Logo and Brand Name */}
-      <div className="flex items-center gap-3 select-none">
-        {/* Plant Icon Container */}
+      <Link href="/" className="flex items-center gap-3 select-none">
         <div className="bg-[#E11D48] text-white p-2 rounded-xl flex items-center justify-center shadow-sm">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -23,23 +26,30 @@ export default function Navbar() {
           </svg>
         </div>
 
-        {/* Brand Text */}
         <span className="text-xl font-bold tracking-tight text-slate-800">
           <span className="text-[#E11D48]">Daily</span> Activity
         </span>
-      </div>
+      </Link>
 
-      {/* Right Side: Authentication Buttons */}
       <div className="flex items-center gap-3">
-        {/* Sign In Button */}
-        <button className="bg-[#E11D48] text-white font-medium px-5 py-2 rounded-lg hover:bg-rose-700 transition duration-200 shadow-sm text-sm">
-          Sign In
-        </button>
-
-        {/* Sign Up Button */}
-        <button className="bg-white text-rose-600 border border-rose-200 font-medium px-5 py-2 rounded-lg hover:bg-rose-50 transition duration-200 text-sm">
-          Sign Up
-        </button>
+        {isLoaded && isSignedIn ? (
+          <UserButton />
+        ) : (
+          <>
+            <Link
+              href="/sign-in"
+              className="bg-[#E11D48] text-white font-medium px-5 py-2 rounded-lg hover:bg-rose-700 transition duration-200 shadow-sm text-sm"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/sign-up"
+              className="bg-white text-rose-600 border border-rose-200 font-medium px-5 py-2 rounded-lg hover:bg-rose-50 transition duration-200 text-sm"
+            >
+              Sign Up
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );

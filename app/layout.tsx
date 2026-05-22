@@ -23,10 +23,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <ClerkProvider>
-      <body className="bg-slate-50 min-h-screen">
-        <main>{children}</main>
-      </body>
+      <ClerkProvider
+        signInUrl="/sign-in"
+        signUpUrl="/sign-up"
+        afterSignOutUrl="/"
+      >
+        <body className="bg-slate-50 min-h-screen">{children}</body>
       </ClerkProvider>
     </html>
   );
