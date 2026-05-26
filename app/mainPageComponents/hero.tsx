@@ -182,7 +182,7 @@ export default function Hero() {
 
           <div className="mt-10 flex items-center justify-center lg:justify-start gap-x-6">
             <Link
-              href="/sign-up"
+              href={isSignedIn ? "/dashboard" : "/sign-up"}
               className="rounded-xl bg-[#E11D48] px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-rose-700 transition duration-200"
             >
               Start Stacking Free

@@ -1,0 +1,1 @@
+export const defaultColor="#d90429";trim
