@@ -188,7 +188,7 @@ export default function Hero() {
               Start Stacking Free
             </Link>
             <Link
-              href="/dasboard"
+              href="/dashboard"
               className="text-sm font-semibold leading-6 text-slate-900 flex items-center gap-2 group hover:text-rose-600 transition duration-200"
             >
               Open journal

@@ -10,14 +10,15 @@ import {
    Home,
    Activity,
    User,
-   Calendar
+   Calendar,
+   Goal
 } from "lucide-react";
 
 const defaultMenu: MenuItemType[] = [
 	{id: "home", label: "Home", href: "/", icon: <Home size={18} />},
-	{id: "activity", label: "Activity Journal", href: "/",icon: <Activity size={18} />},
-	{id: "weekly", label: "Weekly Highlights", href: "/",icon: <Calendar size={18} />},
-	{id: "profile", label: "Profile", href: "/Profile",icon: <User size={18} />},
+	{id: "activity", label: "Goal and Achievement", href: "/dashboard/weekly", icon: <Goal size={18} />},
+	{id: "weekly", label: "Weekly Dashboard", href: "/dashboard/weekly", icon: <Calendar size={18} />},
+	{id: "profile", label: "Profile", href: "/Profile", icon: <User size={18} />},
 ];
 
 const Sidebar: React.FC = () => {

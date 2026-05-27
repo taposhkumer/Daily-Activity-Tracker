@@ -47,7 +47,7 @@ export async function upsertUserFields(
   await UserModel.findOneAndUpdate(
     { clerkId: fields.clerkId },
     { $set: fields },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 }
 

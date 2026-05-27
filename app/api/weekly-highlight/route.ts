@@ -80,7 +80,7 @@ export async function PUT(req: Request) {
       $set: { study, dailyWork, health, imageDataUrl },
       $unset: { note: "" },
     },
-    { upsert: true, new: true, lean: true },
+    { upsert: true, returnDocument: "after", lean: true },
   );
 
   const notes = notesFromDoc(doc);
