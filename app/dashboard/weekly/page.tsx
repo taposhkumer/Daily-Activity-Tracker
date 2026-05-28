@@ -5,6 +5,7 @@ import TaskModel from "@/app/Models/TaskSchema";
 import WeeklyDashboardClient from "@/app/components/dashboard/WeeklyDashboardClient";
 import Sidebar from "@/app/components/SideBar/Sidebar";
 import { Category, Task } from "@/Types/DashboardTypes";
+import { formatDateToBangladeshYMD, parseBangladeshYMD } from "@/lib/dateUtils";
 
 type SeedCategory = {
   name: string;
@@ -65,12 +66,12 @@ const DEFAULT_WEEK_TASKS: SeedTask[][] = [
 
 function getWeekDateRange(): string[] {
   const dates: string[] = [];
-  const today = new Date();
+  const today = parseBangladeshYMD(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - (6 - i));
-    dates.push(date.toISOString().split("T")[0]);
+    dates.push(formatDateToBangladeshYMD(date));
   }
 
   return dates;

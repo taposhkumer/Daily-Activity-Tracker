@@ -36,6 +36,9 @@ export default function WeeklySummary({ stats }: WeeklySummaryProps) {
         bestCategory={stats.bestCategory}
         completedTasks={stats.completedTasks}
         totalTasks={stats.totalTasks}
+        currentStreak={stats.currentStreak}
+        bestStreak={stats.bestStreak}
+        days80={stats.days80}
       />
 
       {/* Two Column Layout */}

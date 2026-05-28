@@ -39,6 +39,9 @@ export interface WeeklyStats {
   bestCategory: string;
   completedTasks: number;
   totalTasks: number;
+  currentStreak: number;
+  bestStreak: number;
+  days80: number;
   heatmapData: HeatmapDay[];
 }
 

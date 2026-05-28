@@ -37,7 +37,7 @@ export default async function RootLayout({
         signUpUrl="/sign-up"
         afterSignOutUrl="/"
       >
-        <body className="bg-slate-50 min-h-screen">{children}</body>
+        <body className="bg-black text-slate-100 min-h-screen">{children}</body>
       </ClerkProvider>
     </html>
   );
