@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useGlobalContext } from "@/contextApi";
 import { Category, Task } from "@/Types/DashboardTypes";
 import { calculateWeeklyStats, calculateDayProgress } from "@/lib/dashboardUtils";
 import WeeklySummary from "./WeeklySummary";
@@ -34,6 +35,8 @@ export default function WeeklyDashboardClient({
     [weekDateRange, taskList, categoryList],
   );
 
+  const { refreshPendingRewards } = useGlobalContext();
+
   const handleToggleTask = async (taskId: string) => {
     const task = taskList.find((item) => item.id === taskId);
     if (!task) return;
@@ -51,6 +54,19 @@ export default function WeeklyDashboardClient({
             item.id === result.task.id ? { ...item, ...result.task } : item,
           ),
         );
+
+        try {
+          if (result.task.completed) {
+            await fetch('/api/rewards/check-immediate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ date: result.task.date }),
+            });
+            if (refreshPendingRewards) await refreshPendingRewards();
+          }
+        } catch (e) {
+          // ignore reward errors
+        }
       }
     } catch (error) {
       console.error("Failed to toggle task", error);

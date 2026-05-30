@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { syncCurrentUserToDb } from "@/lib/syncUserToDb";
+import { GlobalProvider } from "@/contextApi";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -37,7 +38,11 @@ export default async function RootLayout({
         signUpUrl="/sign-up"
         afterSignOutUrl="/"
       >
-        <body className="bg-black text-slate-100 min-h-screen">{children}</body>
+        <body className="bg-black text-slate-100 min-h-screen">
+          <GlobalProvider>
+            {children}
+          </GlobalProvider>
+        </body>
       </ClerkProvider>
     </html>
   );

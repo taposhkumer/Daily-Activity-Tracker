@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import AnalyticsCards from "@/app/components/dashboard/AnalyticsCards";
+import RewardAnalytics from "@/app/components/dashboard/RewardAnalytics";
 import HeatmapGrid from "@/app/components/dashboard/HeatmapGrid";
 import YearSelector from "@/app/components/dashboard/YearSelector";
 import OverallProductivity from "@/app/components/dashboard/OverallProductivity";
@@ -81,6 +82,10 @@ export default function DashboardAnalytics() {
         completedTasks={tasks.filter((t) => t.completed).length}
         totalTasks={tasks.length}
       />
+
+      <div className="mt-4">
+        <RewardAnalytics />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
