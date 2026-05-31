@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useGlobalContext } from "@/contextApi";
 import { motion } from "framer-motion";
 import {
   getBangladeshWeekday,
@@ -25,6 +26,7 @@ export default function TodaysSection({
   categories,
   onToggleTask,
 }: TodaysSectionProps) {
+  const { refreshPendingRewards } = useGlobalContext();
   const dayName = useMemo(() => {
     try {
       return getBangladeshWeekday(date).split(",")[0];
@@ -124,7 +126,21 @@ export default function TodaysSection({
             <TodayTasksList
               tasks={tasks}
               categories={categories}
-              onToggleTask={onToggleTask}
+              onToggleTask={async (taskId: string, completed: boolean) => {
+                if (onToggleTask) onToggleTask(taskId, completed);
+                if (completed) {
+                  try {
+                    await fetch('/api/rewards/check-immediate', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ date }),
+                    });
+                    if (refreshPendingRewards) await refreshPendingRewards();
+                  } catch (e) {
+                    // ignore
+                  }
+                }
+              }}
             />
           </motion.div>
         </>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useGlobalContext } from "@/contextApi";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, TrendingUp } from "lucide-react";
 import {
@@ -28,6 +29,7 @@ export default function DayDetailsPanel({
   isOpen = true,
   onClose,
 }: DayDetailsPanelProps) {
+  const { refreshPendingRewards } = useGlobalContext();
   const dayName = useMemo(() => {
     if (!date) return "";
     try {
@@ -180,6 +182,20 @@ export default function DayDetailsPanel({
                     <TodayTasksList
                       tasks={tasksForDate}
                       categories={categories}
+                      onToggleTask={async (taskId: string, completed: boolean) => {
+                        if (completed && date) {
+                          try {
+                            await fetch('/api/rewards/check-immediate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ date }),
+                            });
+                            if (refreshPendingRewards) await refreshPendingRewards();
+                          } catch (e) {
+                            // ignore
+                          }
+                        }
+                      }}
                     />
                   </motion.div>
                 </>

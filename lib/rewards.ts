@@ -1,6 +1,7 @@
 import connectToDB from "./connectToDB";
 import Reward from "../app/Models/RewardSchema";
 import Task from "../app/Models/TaskSchema";
+import { formatDateToBangladeshYMD, parseBangladeshYMD } from "./dateUtils";
 
 type RewardType = "daily_bonus" | "weekly_bonus" | "streak_bonus" | "high_completion_bonus";
 
@@ -33,16 +34,13 @@ export async function calculateDailyBonus(clerkId: string, date: string) {
 
   if (amount === 0) return null;
 
-  // prevent duplicates for same day
-  const dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayStart);
-  dayEnd.setHours(23, 59, 59, 999);
+  // prevent duplicates for same day (use UTC midnight marker for stable representation)
+  const targetDate = new Date(date + "T00:00:00.000Z");
 
   const exists = await Reward.findOne({
     clerkId,
     type: "daily_bonus",
-    achievedAt: { $gte: dayStart, $lte: dayEnd },
+    achievedAt: targetDate,
   });
   if (exists) return null;
 
@@ -51,7 +49,7 @@ export async function calculateDailyBonus(clerkId: string, date: string) {
     type: "daily_bonus",
     amount,
     productivity: p,
-    achievedAt: new Date(date),
+    achievedAt: targetDate,
     acknowledged: false,
   });
   return reward;
@@ -64,25 +62,52 @@ function startOfDay(d: Date) {
 }
 
 export async function calculateWeeklyBonus(clerkId: string, weekEndDate: string) {
-  // weekEndDate is ISO date string for the day of evaluation (Friday)
+  // weekEndDate is ISO date string for the week end date (in Bangladesh timezone format)
   await ensureDB();
-  const end = new Date(weekEndDate);
-  end.setHours(23, 59, 59, 999);
-  const start = new Date(end);
-  start.setDate(start.getDate() - 6);
-  start.setHours(0, 0, 0, 0);
+  
+  // Calculate week start and end dates in a 100% timezone-safe manner using UTC methods
+  const endDate = new Date(weekEndDate + "T00:00:00.000Z");
+  const startDate = new Date(endDate);
+  startDate.setUTCDate(startDate.getUTCDate() - 6);
+  
+  const startDateStr = startDate.toISOString().slice(0, 10);
+  const endDateStr = endDate.toISOString().slice(0, 10);
 
-  // compute productivity per day for the 7-day window
-  const prodList: number[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const iso = d.toISOString().slice(0, 10);
-    const p = await calculateProductivityForDate(clerkId, iso);
-    prodList.push(p);
+  console.log('[calculateWeeklyBonus] Input weekEndDate:', weekEndDate);
+  console.log('[calculateWeeklyBonus] Parsed dates - start:', startDateStr, 'end:', endDateStr);
+
+  // Get all tasks for the 7-day window (matching frontend calculation)
+  const weekTasks = await Task.find({
+    clerkId,
+    date: {
+      $gte: startDateStr,
+      $lte: endDateStr,
+    },
+  }).lean();
+
+  console.log('[calculateWeeklyBonus] Found tasks count:', weekTasks.length);
+  console.log('[calculateWeeklyBonus] Task details:', weekTasks.map((t: any) => ({ date: t.date, completed: t.completed, weight: t.weight })));
+
+  if (weekTasks.length === 0) {
+    console.log('[calculateWeeklyBonus] No tasks found, returning null');
+    return null;
   }
-  const avg = prodList.reduce((s, x) => s + x, 0) / prodList.length;
-  const p = Math.round(avg);
+
+  // Calculate productivity using same formula as frontend:
+  // (total completed weight) / (total weight) × 100
+  const totalWeight = (weekTasks as any[]).reduce((sum: number, task: any) => sum + (task.weight ?? 0), 0);
+  if (totalWeight === 0) {
+    console.log('[calculateWeeklyBonus] Total weight is 0, returning null');
+    return null;
+  }
+
+  const completedWeight = (weekTasks as any[])
+    .filter((task: any) => task.completed)
+    .reduce((sum: number, task: any) => sum + (task.weight ?? 0), 0);
+
+  const p = Math.round((completedWeight / totalWeight) * 100);
+
+  console.log('[calculateWeeklyBonus] Weights - total:', totalWeight, 'completed:', completedWeight, 'productivity:', p);
 
   let amount = 0;
   if (p >= 70 && p <= 74) amount = 100;
@@ -92,12 +117,23 @@ export async function calculateWeeklyBonus(clerkId: string, weekEndDate: string)
   else if (p >= 90 && p <= 94) amount = 180;
   else if (p >= 95 && p <= 100) amount = 200;
 
-  if (amount === 0) return null;
+  console.log('[calculateWeeklyBonus] Productivity %:', p, 'Bonus amount:', amount);
 
-  // prevent duplicates for same week (use week end date marker)
-  const weekMarker = startOfDay(end);
+  if (amount === 0) {
+    console.log('[calculateWeeklyBonus] Amount is 0 (productivity < 70%), returning null');
+    return null;
+  }
+
+  // prevent duplicates for same week (use UTC midnight week end date marker)
+  const weekMarker = endDate;
   const exists = await Reward.findOne({ clerkId, type: "weekly_bonus", achievedAt: weekMarker });
-  if (exists) return null;
+  
+  console.log('[calculateWeeklyBonus] Week marker:', weekMarker, 'Existing reward found:', !!exists);
+  
+  if (exists) {
+    console.log('[calculateWeeklyBonus] Duplicate reward exists, returning null');
+    return null;
+  }
 
   const reward = await Reward.create({
     clerkId,
@@ -107,6 +143,9 @@ export async function calculateWeeklyBonus(clerkId: string, weekEndDate: string)
     achievedAt: weekMarker,
     acknowledged: false,
   });
+  
+  console.log('[calculateWeeklyBonus] Created reward:', reward);
+  
   return reward;
 }
 

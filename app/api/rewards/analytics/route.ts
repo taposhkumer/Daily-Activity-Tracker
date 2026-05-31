@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import connectToDB from "../../../../lib/connectToDB";
 import Task from "../../../Models/TaskSchema";
 import Reward from "../../../Models/RewardSchema";
+import { formatDateToBangladeshYMD } from "../../../../lib/dateUtils";
 
 async function productivityForDate(clerkId: string, date: string) {
   const tasks = await Task.find({ clerkId, date }).lean();
@@ -11,8 +12,6 @@ async function productivityForDate(clerkId: string, date: string) {
   const completed = tasks.reduce((s: number, t: any) => s + ((t.completed ? t.weight : 0) ?? 0), 0);
   return (completed / total) * 100;
 }
-
-function startOfDay(d: Date) { const s = new Date(d); s.setHours(0,0,0,0); return s; }
 
 export async function GET() {
   try {
@@ -25,6 +24,9 @@ export async function GET() {
     const lifetimeAgg = await Reward.aggregate([{ $match: { clerkId, acknowledged: true } }, { $group: { _id: null, total: { $sum: "$amount" } } }]);
     const lifetime = (lifetimeAgg[0] && lifetimeAgg[0].total) || 0;
 
+    // Get current date in Bangladesh timezone
+    const todayIso = formatDateToBangladeshYMD(new Date());
+
     // count 80%+ days and compute current and best streaks over distinct dates
     const dates = await Task.find({ clerkId }).distinct('date');
     const dateList = (dates as string[]).sort();
@@ -32,7 +34,6 @@ export async function GET() {
     let bestStreak = 0;
     let currentStreak = 0;
     let tempStreak = 0;
-    const todayIso = new Date().toISOString().slice(0,10);
 
     for (let i = 0; i < dateList.length; i++) {
       const date = dateList[i];
@@ -46,24 +47,44 @@ export async function GET() {
       }
     }
 
-    // compute current streak ending today
+    // compute current streak ending today in Bangladesh timezone
+    const currentStreakAnchor = new Date(todayIso + "T00:00:00.000Z");
     for (let i = 0; ; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0,10);
+      const d = new Date(currentStreakAnchor);
+      d.setUTCDate(d.getUTCDate() - i);
+      const iso = d.toISOString().slice(0, 10);
       const p = Math.round(await productivityForDate(clerkId, iso));
       if (p >= 100) currentStreak++; else break;
       if (i > 365) break;
     }
 
-    // today's and this week's bonus (not acknowledged necessarily)
-    const todayIso = new Date().toISOString().slice(0,10);
-    const todayReward = await Reward.findOne({ clerkId, type: 'daily_bonus', achievedAt: { $gte: startOfDay(new Date(todayIso)), $lte: new Date() } }).lean();
-    // week end = today (caller can schedule Friday)
-    const weekEnd = startOfDay(new Date());
-    const weekReward = await Reward.findOne({ clerkId, type: 'weekly_bonus', achievedAt: weekEnd }).lean();
+    // today's bonus (using stable UTC midnight marker)
+    const todayReward = await Reward.findOne({ 
+      clerkId, 
+      type: 'daily_bonus', 
+      achievedAt: new Date(todayIso + "T00:00:00.000Z") 
+    }).lean();
 
-    return NextResponse.json({ currentStreak, bestStreak, todaysBonus: todayReward || null, thisWeekBonus: weekReward || null, count80Days: count80, lifetimeEarned: lifetime, pending: pendingCount }, { status: 200 });
+    // this week's bonus (check if a weekly_bonus has been achieved within the sliding 7-day window ending today)
+    const endD = new Date(todayIso + "T00:00:00.000Z");
+    const startD = new Date(endD);
+    startD.setUTCDate(startD.getUTCDate() - 6);
+
+    const weekReward = await Reward.findOne({ 
+      clerkId, 
+      type: 'weekly_bonus', 
+      achievedAt: { $gte: startD, $lte: endD } 
+    }).lean();
+
+    return NextResponse.json({ 
+      currentStreak, 
+      bestStreak, 
+      todaysBonus: todayReward || null, 
+      thisWeekBonus: weekReward || null, 
+      count80Days: count80, 
+      lifetimeEarned: lifetime, 
+      pending: pendingCount 
+    }, { status: 200 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

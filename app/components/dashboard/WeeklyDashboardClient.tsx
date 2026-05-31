@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useGlobalContext } from "@/contextApi";
 import { Category, Task } from "@/Types/DashboardTypes";
 import { calculateWeeklyStats, calculateDayProgress } from "@/lib/dashboardUtils";
@@ -36,6 +36,37 @@ export default function WeeklyDashboardClient({
   );
 
   const { refreshPendingRewards } = useGlobalContext();
+  const [lastCheckedWeekProgress, setLastCheckedWeekProgress] = useState<number>(0);
+
+  // Monitor weekly progress and check for 100% completion
+  useEffect(() => {
+    const currentProgress = Math.round(weeklyStats.weekPercentage);
+    
+    if (currentProgress === 100 && lastCheckedWeekProgress < 100) {
+      setLastCheckedWeekProgress(100);
+      
+      // Trigger weekly bonus check
+      const weekEnd = weekDateRange[weekDateRange.length - 1] || new Date().toISOString().slice(0, 10);
+      
+      (async () => {
+        try {
+          const response = await fetch('/api/rewards/check-immediate-weekly', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ weekEndDate: weekEnd }),
+          });
+          
+          if (response.ok && refreshPendingRewards) {
+            await refreshPendingRewards();
+          }
+        } catch (e) {
+          console.error('Weekly bonus check failed:', e);
+        }
+      })();
+    } else if (currentProgress < 100 && lastCheckedWeekProgress === 100) {
+      setLastCheckedWeekProgress(currentProgress);
+    }
+  }, [weeklyStats.weekPercentage, lastCheckedWeekProgress, weekDateRange, refreshPendingRewards]);
 
   const handleToggleTask = async (taskId: string) => {
     const task = taskList.find((item) => item.id === taskId);

@@ -11,6 +11,7 @@ interface ProductivityCalendarProps {
   tasks: Task[];
   selectedDate?: string;
   onDateSelect?: (date: string) => void;
+  compact?: boolean;
 }
 
 export default function ProductivityCalendar({
