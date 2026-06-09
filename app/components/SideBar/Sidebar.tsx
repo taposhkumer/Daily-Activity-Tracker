@@ -20,7 +20,7 @@ const defaultMenu: MenuItemType[] = [
 	{id: "daily", label: "Daily Overview", href: "/dashboard/daily", icon: <Zap size={18} />},
 	{id: "activity", label: "This Week", href: "/dashboard/weekly", icon: <Calendar size={18} />},
 	{id: "analysis", label: "Analysis", href: "/dashboard/analysis", icon: <Calendar size={18} />},
-	{id: "goal", label: "Goal and Achievement", href: "/dashboard/analysis", icon: <Goal size={18} />},
+	{id: "goal", label: "Goal", href: "/dashboard/goals", icon: <Goal size={18} />},
 	{id: "profile", label: "Profile", href: "/Profile", icon: <User size={18} />},
 ];
 

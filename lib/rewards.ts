@@ -232,6 +232,80 @@ export async function calculateHighCompletionReward(clerkId: string) {
   return null;
 }
 
+export async function calculateCategory100Bonus(clerkId: string, date: string, categoryId: string, categoryName: string) {
+  await ensureDB();
+  
+  // Get all tasks for this category on this date
+  const categoryTasks = await Task.find({ clerkId, date, categoryId }).lean();
+  
+  if (categoryTasks.length === 0) return null;
+  
+  // Calculate category productivity
+  const totalWeight = (categoryTasks as any[]).reduce((s, t) => s + (t.weight ?? 0), 0);
+  if (totalWeight === 0) return null;
+  
+  const completedWeight = (categoryTasks as any[])
+    .filter((t: any) => t.completed)
+    .reduce((s, t) => s + (t.weight ?? 0), 0);
+  
+  const productivity = Math.round((completedWeight / totalWeight) * 100);
+  
+  if (productivity < 100) return null;
+  
+  // Check if already awarded for this category on this date
+  const targetDate = new Date(date + "T00:00:00.000Z");
+  const exists = await Reward.findOne({
+    clerkId,
+    type: "category_100_bonus",
+    categoryId,
+    achievedAt: targetDate,
+  });
+  
+  if (exists) return null;
+  
+  const reward = await Reward.create({
+    clerkId,
+    type: "category_100_bonus",
+    amount: 15,
+    productivity: 100,
+    categoryId,
+    categoryName,
+    achievedAt: targetDate,
+    acknowledged: false,
+  });
+  
+  return reward;
+}
+
+export async function calculatePerfectDayBonus(clerkId: string, date: string) {
+  await ensureDB();
+  
+  const productivity = await calculateProductivityForDate(clerkId, date);
+  
+  if (Math.round(productivity) < 100) return null;
+  
+  // Check if already awarded
+  const targetDate = new Date(date + "T00:00:00.000Z");
+  const exists = await Reward.findOne({
+    clerkId,
+    type: "perfect_day_bonus",
+    achievedAt: targetDate,
+  });
+  
+  if (exists) return null;
+  
+  const reward = await Reward.create({
+    clerkId,
+    type: "perfect_day_bonus",
+    amount: 25,
+    productivity: 100,
+    achievedAt: targetDate,
+    acknowledged: false,
+  });
+  
+  return reward;
+}
+
 export async function generateReward(reward: Partial<{ clerkId: string; type: RewardType; amount: number; productivity?: number; milestone?: string; achievedAt?: Date; }>) {
   await ensureDB();
   if (!reward.clerkId || !reward.type || !reward.amount) throw new Error("Missing fields");

@@ -48,6 +48,8 @@ export default function RewardModal({ initialRewards = [], onAcknowledge }: { in
     weekly_bonus: "🔥 Weekly Bonus Earned",
     streak_bonus: "🔥 Streak Achievement",
     high_completion_bonus: "🏆 High Completion Achievement",
+    perfect_day_bonus: "⭐ Perfect Day Bonus!",
+    category_100_bonus: "✨ Category Perfect!",
   };
 
   return (
@@ -66,10 +68,17 @@ export default function RewardModal({ initialRewards = [], onAcknowledge }: { in
           <div className="space-y-4">
             <h3 className="text-2xl font-semibold">{titleMap[current.type] ?? 'Reward'}</h3>
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              {current.type === 'daily_bonus' || current.type === 'weekly_bonus' ? (
+              {current.type === 'daily_bonus' || current.type === 'weekly_bonus' || current.type === 'perfect_day_bonus' ? (
                 <>
                   <div>Date: {new Date(current.achievedAt || Date.now()).toLocaleDateString()}</div>
                   <div>Productivity: {current.productivity ?? '-'}%</div>
+                </>
+              ) : null}
+              {current.type === 'category_100_bonus' && (current as any).categoryName ? (
+                <>
+                  <div>Category: {(current as any).categoryName}</div>
+                  <div>Date: {new Date(current.achievedAt || Date.now()).toLocaleDateString()}</div>
+                  <div>Productivity: 100%</div>
                 </>
               ) : null}
               {current.milestone ? <div className="mt-2">{current.milestone.replaceAll('_', ' ')}</div> : null}

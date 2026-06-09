@@ -67,10 +67,17 @@ const DEFAULT_WEEK_TASKS: SeedTask[][] = [
 function getWeekDateRange(): string[] {
   const dates: string[] = [];
   const today = parseBangladeshYMD(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+  const day = today.getDay();
+  
+  // Calculate Sunday of the current week
+  const sundayOffset = day === 0 ? 0 : -day;
+  const sunday = new Date(today);
+  sunday.setDate(sunday.getDate() + sundayOffset);
 
+  // Generate dates from Sunday to Saturday
   for (let i = 0; i < 7; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - (6 - i));
+    const date = new Date(sunday);
+    date.setDate(date.getDate() + i);
     dates.push(formatDateToBangladeshYMD(date));
   }
 

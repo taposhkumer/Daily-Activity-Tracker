@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { formatDateToBangladeshYMD, parseBangladeshYMD } from "@/lib/dateUtils";
 import TodaysSection from "./TodaysSection";
 import ProductivityCalendar from "./ProductivityCalendar";
 import StreakAnalytics from "./StreakAnalytics";
 import DayDetailsPanel from "./DayDetailsPanel";
+import RewardModal from "@/app/components/RewardModal";
+import { shouldCheckEveningNotification, getYesterdayDate } from "@/lib/morningNotification";
 import { type Category, type Task } from "@/Types/DashboardTypes";
 
 interface DailyOverviewClientProps {
@@ -23,6 +25,45 @@ export default function DailyOverviewClient({
   const today = formatDateToBangladeshYMD(parseBangladeshYMD(new Date()));
   const [selectedDate, setSelectedDate] = useState<string>(today);
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
+  const [morningNotifications, setMorningNotifications] = useState<any[]>([]);
+
+  // Check for 10:00 PM evening notifications
+  useEffect(() => {
+    const checkEveningNotification = async () => {
+      if (!shouldCheckEveningNotification()) return;
+
+      try {
+        const yesterday = getYesterdayDate();
+        const response = await fetch('/api/rewards/pending', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const pendingRewards = Array.isArray(data.pending) ? data.pending : [];
+
+        // Filter rewards for yesterday
+        const yesterdayRewards = pendingRewards.filter((reward: any) => {
+          const rewardDate = new Date(reward.achievedAt).toISOString().slice(0, 10);
+          return rewardDate === yesterday;
+        });
+
+        if (yesterdayRewards.length > 0) {
+          setMorningNotifications(yesterdayRewards);
+        }
+      } catch (error) {
+        console.error('Error checking evening notifications:', error);
+      }
+    };
+
+    // Check immediately and then set interval for every minute
+    checkEveningNotification();
+    const interval = setInterval(checkEveningNotification, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   const selectedDateTasks = useMemo(() => {
     return allTasks.filter((task) => {
@@ -96,6 +137,14 @@ export default function DailyOverviewClient({
         categories={categories}
         isOpen={detailsPanelOpen}
         onClose={() => setDetailsPanelOpen(false)}
+      />
+
+      {/* Morning Notification Modal */}
+      <RewardModal 
+        initialRewards={morningNotifications} 
+        onAcknowledge={async () => {
+          setMorningNotifications([]);
+        }}
       />
     </div>
   );

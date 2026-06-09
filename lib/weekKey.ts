@@ -1,10 +1,10 @@
-/** Monday of the current week (local), as YYYY-MM-DD */
+/** Sunday of the current week (local), as YYYY-MM-DD */
 export function getWeekKey(date = new Date()) {
   const d = new Date(date);
   d.setHours(12, 0, 0, 0);
   const day = d.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + mondayOffset);
+  const sundayOffset = day === 0 ? 0 : -day;
+  d.setDate(d.getDate() + sundayOffset);
   return d.toISOString().slice(0, 10);
 }
 
